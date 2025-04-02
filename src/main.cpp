@@ -1,18 +1,81 @@
-#include <Arduino.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
+#include <WiFiClient.h>
 
-// put function declarations here:
-int myFunction(int, int);
+#include "config.h"
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+#ifndef SSID
+    #define SSID ""
+#endif
+#ifndef PASSPHRASE
+    #define PASSPHRASE ""
+#endif
+
+const char *ssid = SSID;
+const char *password = PASSPHRASE;
+
+ESP8266WebServer server(80);
+
+const int led = 13;
+
+void handleRoot() {
+    digitalWrite(led, 1);
+    server.send(200, "text/html", "<h1>hello from esp8266!</h1>");
+    digitalWrite(led, 0);
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void handleNotFound() {
+    digitalWrite(led, 1);
+    String message = "File Not Found\n\n";
+    message += "URI: ";
+    message += server.uri();
+    message += "\nMethod: ";
+    message += (server.method() == HTTP_GET) ? "GET" : "POST";
+    message += "\nArguments: ";
+    message += server.args();
+    message += "\n";
+    for (uint8_t i = 0; i < server.args(); i++) {
+        message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    }
+    server.send(404, "text/plain", message);
+    digitalWrite(led, 0);
 }
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+void setup(void) {
+    pinMode(led, OUTPUT);
+    digitalWrite(led, 0);
+    Serial.begin(115200);
+    WiFi.mode(WIFI_STA);
+    int wifiConnected = WiFi.begin(ssid, password);
+    if (wifiConnected == WL_CONNECT_FAILED) {
+        Serial.println("failed to connect wifi");
+    }
+    Serial.println("");
+
+    // Wait for connection
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(ssid);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+
+    if (MDNS.begin("esp8266")) {
+        Serial.println("MDNS responder started");
+    }
+
+    server.on("/", handleRoot);
+
+    server.on("/inline", []() { server.send(200, "text/plain", "this works as well"); });
+
+    server.onNotFound(handleNotFound);
+
+    server.begin();
+    Serial.println("HTTP server started");
 }
+
+void loop(void) { server.handleClient(); }
