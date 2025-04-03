@@ -21,7 +21,7 @@ const int led = 13;
 
 void handleRoot() {
     digitalWrite(led, 1);
-    server.send(200, "text/html", "<h1>hello from esp8266!</h1>");
+    server.send(200, "text/html", "<h1>Dashboard</h1>");
     digitalWrite(led, 0);
 }
 
@@ -70,7 +70,7 @@ void setup(void) {
 
     server.on("/", handleRoot);
 
-    server.on("/inline", []() { server.send(200, "text/plain", "this works as well"); });
+    server.on("/on", []() { server.send(200, "text/plain", "yes"); });
 
     server.onNotFound(handleNotFound);
 
