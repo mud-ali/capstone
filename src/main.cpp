@@ -1,6 +1,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <LittleFS.h>
 #include <WiFiClient.h>
 
 #include "config.h"
@@ -18,11 +19,29 @@ const char *password = PASSPHRASE;
 ESP8266WebServer server(80);
 
 const int led = 13;
+const int GPIOpin = 11;
+int GPIOstatus = LOW;
 
 void handleRoot() {
-    digitalWrite(led, 1);
-    server.send(200, "text/html", "<h1>Dashboard</h1>");
-    digitalWrite(led, 0);
+    if (!LittleFS.begin()) {
+        server.send(500, "text/plain", "Failed to mount file system");
+        return;
+    }
+
+    File file = LittleFS.open("/index.html", "r");
+    if (!file) {
+        Serial.println("LittleFS mounted successfully. Files:");
+        Dir dir = LittleFS.openDir("/");
+        while (dir.next()) {
+            Serial.println(dir.fileName());
+        }
+        server.send(404, "text/plain", "File not found");
+        return;
+    }
+
+    String html = file.readString();
+    file.close();
+    server.send(200, "text/html", html);
 }
 
 void handleNotFound() {
@@ -39,7 +58,17 @@ void handleNotFound() {
         message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
     server.send(404, "text/plain", message);
+    delay(1000);
     digitalWrite(led, 0);
+}
+
+void handleGPIOToggle() {
+    Serial.println("Toggling...");
+    GPIOstatus ^= 1;
+    digitalWrite(GPIOpin, GPIOstatus);
+    String statusString = GPIOstatus ? "on" : "off";
+    Serial.println("Pin status: " + statusString);
+    server.send(200, "text/plain", statusString);
 }
 
 void setup(void) {
@@ -70,7 +99,7 @@ void setup(void) {
 
     server.on("/", handleRoot);
 
-    server.on("/on", []() { server.send(200, "text/plain", "yes"); });
+    server.on("/on", handleGPIOToggle);
 
     server.onNotFound(handleNotFound);
 

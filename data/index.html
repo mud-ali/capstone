@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Dashboard</h1>
+
+    <button id="toggle">
+        Press to turn on motor
+    </button>
+
+    <script>
+        document.getElementById("toggle").addEventListener("click", async (e) => {
+            let res = await fetch('/on', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            e.target.innerText = `Press to turn ${await res.text()} the motor`;
+        })
+    </script>
+</body>
+</html>
