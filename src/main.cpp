@@ -7,10 +7,10 @@
 #include "config.h"
 
 #ifndef SSID
-    #define SSID ""
+#define SSID ""
 #endif
 #ifndef PASSPHRASE
-    #define PASSPHRASE ""
+#define PASSPHRASE ""
 #endif
 
 const char *ssid = SSID;
@@ -18,21 +18,30 @@ const char *password = PASSPHRASE;
 
 ESP8266WebServer server(80);
 
+#include <LiquidCrystal_I2C.h>
+
+// Adjust address (0x27 is most common) and size (16x2 or 20x4)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 const int led = 13;
 const int GPIOpin = 11;
 int GPIOstatus = LOW;
 
-void handleRoot() {
-    if (!LittleFS.begin()) {
+void handleRoot()
+{
+    if (!LittleFS.begin())
+    {
         server.send(500, "text/plain", "Failed to mount file system");
         return;
     }
 
     File file = LittleFS.open("/index.html", "r");
-    if (!file) {
+    if (!file)
+    {
         Serial.println("LittleFS mounted successfully. Files:");
         Dir dir = LittleFS.openDir("/");
-        while (dir.next()) {
+        while (dir.next())
+        {
             Serial.println(dir.fileName());
         }
         server.send(404, "text/plain", "File not found");
@@ -44,7 +53,8 @@ void handleRoot() {
     server.send(200, "text/html", html);
 }
 
-void handleNotFound() {
+void handleNotFound()
+{
     digitalWrite(led, 1);
     String message = "File Not Found\n\n";
     message += "URI: ";
@@ -54,7 +64,8 @@ void handleNotFound() {
     message += "\nArguments: ";
     message += server.args();
     message += "\n";
-    for (uint8_t i = 0; i < server.args(); i++) {
+    for (uint8_t i = 0; i < server.args(); i++)
+    {
         message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
     server.send(404, "text/plain", message);
@@ -62,28 +73,42 @@ void handleNotFound() {
     digitalWrite(led, 0);
 }
 
-void handleGPIOToggle() {
+void handleGPIOToggle()
+{
     Serial.println("Toggling...");
     GPIOstatus ^= 1;
     digitalWrite(GPIOpin, GPIOstatus);
+    if (GPIOstatus) lcd.noBacklight();
+    else lcd.backlight();
     String statusString = GPIOstatus ? "on" : "off";
     Serial.println("Pin status: " + statusString);
     server.send(200, "text/plain", statusString);
 }
 
-void setup(void) {
+void setup(void)
+{
+    lcd.init();      // Initialize LCD
+    lcd.backlight(); // Turn on backlight
+
+    lcd.setCursor(0, 0);
+    lcd.print("Hello ESP8266!");
+    lcd.setCursor(0, 1);
+    lcd.print("I2C LCD Test");
+
     pinMode(led, OUTPUT);
     digitalWrite(led, 0);
     Serial.begin(115200);
     WiFi.mode(WIFI_STA);
     int wifiConnected = WiFi.begin(ssid, password);
-    if (wifiConnected == WL_CONNECT_FAILED) {
+    if (wifiConnected == WL_CONNECT_FAILED)
+    {
         Serial.println("failed to connect wifi");
     }
     Serial.println("");
 
     // Wait for connection
-    while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED)
+    {
         delay(500);
         Serial.print(".");
     }
@@ -93,7 +118,8 @@ void setup(void) {
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
 
-    if (MDNS.begin("esp8266")) {
+    if (MDNS.begin("esp8266"))
+    {
         Serial.println("MDNS responder started");
     }
 
