@@ -3,6 +3,7 @@
 #include <ESP8266mDNS.h>
 #include <LittleFS.h>
 #include <WiFiClient.h>
+#include <LCDI2C_Multilingual.h>
 
 #include "config.h"
 
@@ -18,10 +19,7 @@ const char *password = PASSPHRASE;
 
 ESP8266WebServer server(80);
 
-#include <LiquidCrystal_I2C.h>
-
-// Adjust address (0x27 is most common) and size (16x2 or 20x4)
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LCDI2C_Generic lcd(0x27, 16, 2);
 
 const int led = 13;
 const int GPIOpin = 11;
@@ -55,7 +53,6 @@ void handleRoot()
 
 void handleNotFound()
 {
-    digitalWrite(led, 1);
     String message = "File Not Found\n\n";
     message += "URI: ";
     message += server.uri();
@@ -69,8 +66,6 @@ void handleNotFound()
         message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
     }
     server.send(404, "text/plain", message);
-    delay(1000);
-    digitalWrite(led, 0);
 }
 
 String sendGPIOState()
