@@ -73,27 +73,32 @@ void handleNotFound()
     digitalWrite(led, 0);
 }
 
+String sendGPIOState()
+{
+    String statusString = GPIOstatus ? "on" : "off";
+    server.send(200, "text/plain", statusString);
+    return statusString;
+}
+
 void handleGPIOToggle()
 {
     Serial.println("Toggling...");
     GPIOstatus ^= 1;
     digitalWrite(GPIOpin, GPIOstatus);
-    if (GPIOstatus) lcd.noBacklight();
-    else lcd.backlight();
-    String statusString = GPIOstatus ? "on" : "off";
-    Serial.println("Pin status: " + statusString);
-    server.send(200, "text/plain", statusString);
-}
+    if (!GPIOstatus) lcd.noBacklight();
+    else {
+        lcd.backlight();
+        lcd.setCursor(0, 0);
+        lcd.print("System is on");
+    }
+
+    Serial.println("status: "+ sendGPIOState());
+}   
 
 void setup(void)
 {
-    lcd.init();      // Initialize LCD
-    lcd.backlight(); // Turn on backlight
-
-    lcd.setCursor(0, 0);
-    lcd.print("Hello ESP8266!");
-    lcd.setCursor(0, 1);
-    lcd.print("I2C LCD Test");
+    lcd.init();
+    lcd.noBacklight();
 
     pinMode(led, OUTPUT);
     digitalWrite(led, 0);
@@ -124,6 +129,8 @@ void setup(void)
     }
 
     server.on("/", handleRoot);
+
+    server.on("/status", sendGPIOState);
 
     server.on("/on", handleGPIOToggle);
 

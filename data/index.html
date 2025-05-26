@@ -9,10 +9,15 @@
     <h1>Dashboard</h1>
 
     <button id="toggle">
-        Press to turn on motor
+        Press to turn on the device
     </button>
 
     <script>
+        function oppositeState(stateName) {
+            console.log(stateName);
+            return stateName==="on" ? "off" : "on";
+        }
+
         document.getElementById("toggle").addEventListener("click", async (e) => {
             let res = await fetch('/on', {
                 method: 'POST',
@@ -21,8 +26,19 @@
                 }
             });
             
-            e.target.innerText = `Press to turn ${await res.text()} the motor`;
+            e.target.innerText = `Press to turn ${oppositeState(await res.text())} the device`;
         })
+
+        setInterval(async ()=>{
+            let res = await fetch('/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            document.getElementById("toggle").innerText = `Press to turn ${oppositeState(await res.text())} the device`;
+        },3000);
     </script>
 </body>
 </html>
